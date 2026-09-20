@@ -10,8 +10,15 @@
  *    fonts, etc.) is cached the first time it's fetched and served from
  *    cache on every subsequent request, including fully offline. This
  *    avoids hardcoding hashed build filenames here.
- *  - Navigation requests fall back to the cached index.html when the
+ *  - Navigation requests fall back to the cached shell index.html when the
  *    network is unavailable, so deep refreshes still work in a dead zone.
+ *
+ * All URLs below are RELATIVE and resolved against self.registration.scope
+ * (the directory this service worker was registered from), not the domain
+ * root. That's what makes this work unmodified whether the app is deployed
+ * at a domain root or a subpath, e.g. a GitHub Pages project site at
+ * https://<user>.github.io/<repo-name>/ — the scope there is /<repo-name>/,
+ * not /.
  *
  * No Background Sync, no Push — intentionally out of scope per spec.
  */
@@ -19,13 +26,18 @@
 const CACHE_VERSION = 'burndown-shell-v1';
 const RUNTIME_CACHE = 'burndown-runtime-v1';
 
+// self.registration.scope is an absolute URL ending in '/', e.g.
+// "https://user.github.io/repo-name/". Resolve every shell path against it.
+const SCOPE = self.registration.scope;
+const shellUrl = (relativePath) => new URL(relativePath, SCOPE).href;
+
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/apple-touch-icon.png'
+  shellUrl('./'),
+  shellUrl('./index.html'),
+  shellUrl('./manifest.json'),
+  shellUrl('./icons/icon-192.png'),
+  shellUrl('./icons/icon-512.png'),
+  shellUrl('./icons/apple-touch-icon.png')
 ];
 
 self.addEventListener('install', (event) => {
@@ -68,10 +80,10 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put('/index.html', copy));
+          caches.open(CACHE_VERSION).then((cache) => cache.put(shellUrl('./index.html'), copy));
           return response;
         })
-        .catch(() => caches.match('/index.html'))
+        .catch(() => caches.match(shellUrl('./index.html')))
     );
     return;
   }

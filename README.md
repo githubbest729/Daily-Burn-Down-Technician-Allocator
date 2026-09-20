@@ -42,16 +42,53 @@ npm run preview     # serve the production build locally
 
 ## Deploying so the PWA actually installs
 
-- **Serve over HTTPS** (or `localhost` for testing) — Safari refuses to
-  register a service worker or offer "Add to Home Screen" as a real PWA
-  otherwise.
-- Deploy the contents of `dist/` as-is; `manifest.json`, `service-worker.js`,
-  and `icons/` are copied from `public/` to the output root automatically by
-  Vite.
-- On iPhone/iPad: open the site in **Safari** (not Chrome — iOS only lets
-  Safari install home-screen web apps), tap Share → **Add to Home Screen**.
-  The app then launches full-screen, using `apple-touch-icon.png` and the
-  meta tags in `index.html`.
+**The most common mistake:** GitHub Pages' "Deploy from branch" setting
+serves whatever files are in that branch *as-is* — it does not run
+`npm run build`. This app's source is JSX (`src/main.jsx` etc.), which
+browsers cannot execute directly, so uploading the raw source repo and
+pointing Pages at it results in a blank page and cascading 404s for
+`manifest.json`, `service-worker.js`, and the icons.
+
+### Recommended: GitHub Actions (build happens automatically)
+
+This repo includes `.github/workflows/deploy.yml`, which builds the app with
+Vite and publishes `dist/` to GitHub Pages on every push to `main`.
+
+1. Push this repo to GitHub.
+2. In the repo, go to **Settings → Pages**.
+3. Under **Build and deployment → Source**, choose **GitHub Actions** (not
+   "Deploy from branch").
+4. Push to `main` (or run the workflow manually from the **Actions** tab).
+   The first run may take a minute; your site will be live at
+   `https://<username>.github.io/<repo-name>/`.
+
+### Manual alternative
+
+```bash
+npm install
+npm run build          # produces dist/
+```
+
+Deploy the **contents of `dist/`** (not the repo source) — e.g. push them to
+a `gh-pages` branch — and point "Deploy from branch" at that branch.
+
+### Why paths are relative, not `/absolute`
+
+`vite.config.js` sets `base: './'`, `index.html` uses Vite's `%BASE_URL%`
+token for the manifest/icon links, `manifest.json`'s `start_url`/`scope`/
+icon `src` values are relative (`.`, `icons/icon-192.png`), and
+`service-worker.js` resolves every cached URL against
+`self.registration.scope` rather than a hardcoded `/`. Together this means
+the built app works unmodified whether it's hosted at a domain root
+(`example.com/`) or a GitHub Pages project subpath
+(`username.github.io/repo-name/`) — no repo-name hardcoding required.
+
+### Installing on iPhone/iPad
+
+Open the deployed URL in **Safari** (not Chrome — iOS only lets Safari
+install home-screen web apps), tap Share → **Add to Home Screen**. The app
+then launches full-screen, using `apple-touch-icon.png` and the meta tags in
+`index.html`.
 
 ## Offline behavior
 
