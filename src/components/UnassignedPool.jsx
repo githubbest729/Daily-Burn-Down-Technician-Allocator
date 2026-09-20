@@ -1,13 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Droppable } from '@hello-pangea/dnd';
 import { Inbox, Plus } from 'lucide-react';
 import { useBoardStore } from '../store/useBoardStore';
 import TaskCard from './TaskCard';
 
 export default function UnassignedPool() {
-  // Subscribe to the raw tasks array so this pool re-renders whenever a task
-  // is added, removed, or dragged in/out — see TechnicianLane.jsx for why a
-  // helper-method selector like `s.tasksFor` would silently go stale.
   const allTasks = useBoardStore((s) => s.tasks);
   const addTask = useBoardStore((s) => s.addTask);
   const tasks = useMemo(
@@ -15,11 +12,18 @@ export default function UnassignedPool() {
     [allTasks]
   );
   const [draft, setDraft] = useState('');
+  const [shake, setShake] = useState(false);
+  const inputRef = useRef(null);
 
   const submit = (e) => {
     e.preventDefault();
     const title = draft.trim();
-    if (!title) return;
+    if (!title) {
+      inputRef.current?.focus();
+      setShake(true);
+      setTimeout(() => setShake(false), 300);
+      return;
+    }
     addTask(title);
     setDraft('');
   };
@@ -60,10 +64,13 @@ export default function UnassignedPool() {
 
       <form onSubmit={submit} className="p-2 border-t border-rig-border flex items-center gap-1.5">
         <input
+          ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="New task…"
-          className="flex-1 min-h-touch rounded-md bg-rig-raised border border-rig-border px-2.5 text-sm text-rig-text placeholder:text-rig-faint focus:outline-none focus:border-signal-amber"
+          className={`flex-1 min-h-touch rounded-md bg-rig-raised border px-2.5 text-sm text-rig-text placeholder:text-rig-faint focus:outline-none transition-colors ${
+            shake ? 'border-signal-red' : 'border-rig-border focus:border-signal-amber'
+          }`}
         />
         <button
           type="submit"
