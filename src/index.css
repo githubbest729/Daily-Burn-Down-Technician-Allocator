@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  overscroll-behavior: none;
+  /* Kill iOS Safari's rubber-band scroll on the whole page — only inner
+     scroll containers (lanes) should move. Keeps the header pinned during
+     a fast drag near the top edge. */
+}
+
+* {
+  -webkit-touch-callout: none;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* @hello-pangea/dnd sets some inline styles during drag; this keeps text
+   unselectable everywhere else so a long-press starts a drag instead of a
+   text-selection bubble on iOS Safari. */
+.select-none {
+  -webkit-user-select: none;
+  user-select: none;
+}

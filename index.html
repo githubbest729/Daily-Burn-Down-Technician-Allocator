@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <title>Daily Burn-Down &amp; Technician Allocator</title>
+
+  <!-- Standard PWA manifest -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0A0C0F" />
+  <meta name="description" content="Offline-first drag-and-drop daily task allocator and burn-down tracker for field crews." />
+
+  <!-- iOS "Add to Home Screen" support (iOS ignores manifest.json for most
+       of this, so these meta tags are load-bearing on iOS 16.7 Safari) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Burn-Down" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+
+  <!-- Prevent iOS from turning things like "8/6" hour readouts into blue
+       tel/date links -->
+  <meta name="format-detection" content="telephone=no, date=no" />
+
+  <style>
+    /* Minimal critical shell styling so there's no white flash before the
+       bundle paints, and so the app still looks intentional if the SW
+       serves a stale shell offline. */
+    html, body, #root { height: 100%; }
+    body {
+      margin: 0;
+      background: #0A0C0F;
+      color: #F1F3F4;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(() => {
+          /* offline-first shell just won't be pre-cached this session;
+             app still functions online */
+        });
+      });
+    }
+  </script>
+</body>
+</html>
