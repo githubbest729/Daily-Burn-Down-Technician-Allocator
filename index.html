@@ -5,10 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
   <title>Daily Burn-Down &amp; Technician Allocator</title>
 
+  <!-- Standard PWA manifest. %BASE_URL% is replaced by Vite at build time
+       with the configured `base` (see vite.config.js) so this resolves
+       correctly whether the app is hosted at a domain root or a subpath
+       like /Daily-Burn-Down-Technician-Allocator/. -->
   <link rel="manifest" href="%BASE_URL%manifest.json" />
   <meta name="theme-color" content="#0A0C0F" />
   <meta name="description" content="Offline-first drag-and-drop daily task allocator and burn-down tracker for field crews." />
 
+  <!-- iOS "Add to Home Screen" support (iOS ignores manifest.json for most
+       of this, so these meta tags are load-bearing on iOS 16.7 Safari).
+       mobile-web-app-capable is the current standard tag; apple-mobile-web-app-capable
+       is kept alongside it for older WebKit that doesn't recognize the former. -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -16,11 +24,35 @@
   <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%icons/apple-touch-icon.png" />
 
+  <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="32x32" href="%BASE_URL%icons/favicon-32.png" />
 
+  <!-- Social sharing (Open Graph + Twitter Card). These use your GitHub
+       Pages URL. Social crawlers (Facebook, Slack, iMessage, etc.) require
+       ABSOLUTE URLs here — a relative or %BASE_URL%-based path will not
+       resolve when they fetch this page server-side. If you ever deploy
+       to a different domain, update the four URLs below to match. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Daily Burn-Down & Technician Allocator" />
+  <meta property="og:description" content="Offline-first, drag-and-drop daily task allocator for field crews — map tasks to technicians and track planned vs. burned hours from a tablet." />
+  <meta property="og:image" content="https://githubbest729.github.io/Daily-Burn-Down-Technician-Allocator/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://githubbest729.github.io/Daily-Burn-Down-Technician-Allocator/" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Daily Burn-Down & Technician Allocator" />
+  <meta name="twitter:description" content="Offline-first, drag-and-drop daily task allocator for field crews — map tasks to technicians and track planned vs. burned hours from a tablet." />
+  <meta name="twitter:image" content="https://githubbest729.github.io/Daily-Burn-Down-Technician-Allocator/og-image.png" />
+
+  <!-- Prevent iOS from turning things like "8/6" hour readouts into blue
+       tel/date links -->
   <meta name="format-detection" content="telephone=no, date=no" />
 
   <style>
+    /* Minimal critical shell styling so there's no white flash before the
+       bundle paints, and so the app still looks intentional if the SW
+       serves a stale shell offline. */
     html, body, #root { height: 100%; }
     body {
       margin: 0;
