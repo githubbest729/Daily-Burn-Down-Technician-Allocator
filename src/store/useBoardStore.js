@@ -2,38 +2,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 
-/**
- * ---------------------------------------------------------------------------
- * SCHEMA
- * ---------------------------------------------------------------------------
- * technicians: {
- *   id: string
- *   name: string
- *   capacityHours: number       // daily capacity, e.g. 8
- * }[]
- *
- * tasks: {
- *   id: string
- *   title: string
- *   estHours: number            // planned/estimated hours
- *   actualHours: number         // hours burned so far
- *   technicianId: string|null   // null = sits in the "Unassigned" pool
- *   order: number                // position within its column
- *   done: boolean
- * }[]
- *
- * Column ids used by the drag-and-drop layer are either 'unassigned' or a
- * technician's id — tasks.technicianId mirrors whichever column they're in.
- * ---------------------------------------------------------------------------
- */
-
 const uid = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 
-// idb-keyval storage adapter for zustand's persist middleware. IndexedDB is
-// used instead of localStorage because it's async (won't block the main
-// thread on a 2017 device), has a much higher storage ceiling, and survives
-// tab restarts reliably — the reason this whole app can be left running
-// through a morning briefing and closed accidentally without data loss.
 const idbStorage = createJSONStorage(() => ({
   getItem: async (name) => (await idbGet(name)) ?? null,
   setItem: async (name, value) => idbSet(name, value),
@@ -63,14 +33,6 @@ export const useBoardStore = create(
       siteDate: new Date().toISOString().slice(0, 10),
       hydrated: false,
 
-      // ---- derived helpers -------------------------------------------------
-      // NOTE: these are plain functions on the store, not selectors. Calling
-      // useBoardStore(s => s.tasksFor) only subscribes to that function
-      // reference (which never changes), NOT to `tasks` itself — so a
-      // component that renders `tasksFor(id)` in its body won't re-render
-      // when tasks move. Components subscribe to `s.tasks` directly and
-      // derive locally (see TechnicianLane/UnassignedPool/SiteHeader). Use
-      // these helpers only for one-off reads outside render, e.g. exportBoard.
       tasksFor: (columnId) =>
         get()
           .tasks.filter((t) => (columnId === 'unassigned' ? t.technicianId === null : t.technicianId === columnId))
@@ -98,13 +60,6 @@ export const useBoardStore = create(
         );
       },
 
-      // ---- mutations --------------------------------------------------------
-
-      /**
-       * Move a task to a new column (technicianId, or null for Unassigned)
-       * and a specific index within that column's ordered list. Mirrors the
-       * semantics of a DnD "reorder within/between lists" operation.
-       */
       moveTask: (taskId, toColumnId, toIndex) => {
         const toTechnicianId = toColumnId === 'unassigned' ? null : toColumnId;
         set((state) => {
@@ -165,7 +120,6 @@ export const useBoardStore = create(
       removeTechnician: (technicianId) =>
         set((state) => ({
           technicians: state.technicians.filter((t) => t.id !== technicianId),
-          // Orphaned tasks fall back to Unassigned rather than vanishing.
           tasks: state.tasks.map((t) => (t.technicianId === technicianId ? { ...t, technicianId: null } : t))
         })),
 
@@ -176,10 +130,6 @@ export const useBoardStore = create(
           )
         })),
 
-      // ---- safety / recovery actions ----------------------------------------
-      // iOS can evict IndexedDB after ~7 days of app non-use, so we give the
-      // Lead Engineer an explicit, manual way to get their board off-device
-      // (export) and back on (import), independent of automatic persistence.
       exportBoard: () => {
         const { technicians, tasks, siteDate } = get();
         return JSON.stringify({ technicians, tasks, siteDate, exportedAt: new Date().toISOString() }, null, 2);
@@ -208,10 +158,13 @@ export const useBoardStore = create(
         }))
     }),
     {
-      name: 'daily-burndown-board', // IndexedDB key
+      name: 'daily-burndown-board',
       storage: idbStorage,
-      onRehydrateStorage: () => (state) => {
-        if (state) state.hydrated = true;
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('Board rehydration failed, starting from defaults:', error);
+        }
+        useBoardStore.setState({ hydrated: true });
       }
     }
   )
